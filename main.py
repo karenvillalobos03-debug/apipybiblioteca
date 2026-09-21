@@ -1,23 +1,42 @@
-import json
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import PlainTextResponse
-from starlette.responses import JSONResponse
-from pydantic import BaseModel
+from models import Libro, Editorial
 
-from models import Book
+app = FastAPI(title="API Biblioteca")
 
-app = FastAPI()
+editoriales_db = {
+    1: Editorial(idEd=1, nombre="Alfaomega", pais="México"),
+    2: Editorial(idEd=2, nombre="O'Reilly Media", pais="Estados Unidos")
+}
 
-@app.get("/books/{book_id}", response_model=Book)
-async def read_book(book_id: int):
-    obj1 = Book(title="O1 - Cien años de soledad", author="Gabriel García Márquez", year=1967)
-    obj2 = Book(title="O2 - Introducción a Python", author="Guido van Rossum",year=1991)
-    if book_id==1:
-        return obj1
-    if book_id==2:
-        return obj2
-
-    raise HTTPException(
-        status_code=404,
-        detail="Libro no encontrado"
+libros_db = {
+    "9780135957059": Libro(
+        isbn="9780135957059",
+        titulo="Pragmatic Programmer",
+        autor="Andrew Hunt",
+        precio=45.99,
+        editorial=editoriales_db[1]
+    ),
+    "9781491957660": Libro(
+        isbn="9781491957660",
+        titulo="Fluent Python",
+        autor="Luciano Ramalho",
+        precio=59.99,
+        editorial=editoriales_db[2]
     )
+}
+
+@app.get("/")
+def home():
+    return {"mensaje": "API Biblioteca activa"}
+
+@app.get("/books/{isbn}", response_model=Libro)
+def get_book(isbn: str):
+    if isbn not in libros_db:
+        raise HTTPException(status_code=404, detail="Libro no encontrado")
+    return libros_db[isbn]
+
+@app.get("/editoriales/{id_ed}", response_model=Editorial)
+def get_editorial(id_ed: int):
+    if id_ed not in editoriales_db:
+        raise HTTPException(status_code=404, detail="Editorial no encontrada")
+    return editoriales_db[id_ed]
